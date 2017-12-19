@@ -6,9 +6,9 @@ def __main__():
     setup_logging()
 
     import shutil
-    #shutil.rmtree("test_base")
+    shutil.rmtree("test_base")
     env = natup_pkg.Environment('test_base')
-    env.packages["glibc_version_header"].install(env)
+    env.packages["glibc_version_header"].get_latest_version().install(env)
 
     # packages.glibc_version_header.foo()
     # files.get("https://google.com", "google.html")

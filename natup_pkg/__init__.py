@@ -1,5 +1,6 @@
-from .environment import *
-from .package import *
+from .environment import Environment
+from .packageversion import PackageVersion
+from .package import Package
 
 from . import files
 from . import packages
