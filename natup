@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+import natup_pkg.main
+
+natup_pkg.main.__main__()
