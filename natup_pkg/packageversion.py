@@ -12,14 +12,16 @@ class PackageVersion:
                  archive_url: str = None,
                  archive_hash: str = None,
                  depends: typing.Set["natup_pkg.PackageVersion"] = None,
+                 build_depends: typing.Set["natup_pkg.PackageVersion"] = None,
                  install_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
-                 build_func: typing.Callable[["natup_pkg.PackageVersion", "natup_pkg.Environment"], None] = None):
+                 build_func: typing.Callable[["natup_pkg.PackageVersion", "natup_pkg.Environment", str], None] = None):
 
         self.package = None
         self.version_str = version_str
         self.archive_url = archive_url
         self.archive_hash = archive_hash
         self.depends = depends if depends else set()
+        self.build_depends = build_depends if build_depends else set()
         self.install_func = install_func
         self.build_func = build_func
 
@@ -27,6 +29,7 @@ class PackageVersion:
         assert self.archive_url is not None
         assert self.archive_hash is not None
         assert self.depends is not None
+        assert self.build_depends is not None
         assert self.install_func is not None
 
     def set_package(self, pkg: "natup_pkg.Package"):
@@ -93,8 +96,11 @@ class PackageVersion:
     def get_install_dir(self, env: "natup_pkg.Environment"):
         return env.get_install_dir() + "/" + self.package.name + "_" + self.version_str
 
+    def installed(self, env: "natup_pkg.Environment") -> bool:
+        return os.path.exists(self.get_install_dir(env))
+
     def install(self, env: "natup_pkg.Environment"):
-        if not os.path.exists(self.get_install_dir(env)):
+        if not self.installed(env):
             logging.info("Downloading package: %s, version: %s, url: %s",
                          self.package.name, self.version_str, self.archive_url)
             self.download_archive(env)
@@ -104,13 +110,19 @@ class PackageVersion:
             if os.path.exists(self.get_build_dir(env)):
                 shutil.rmtree(self.get_build_dir(env))
 
-            if self.build_func is not None:
-                logging.info("Building package: %s, version: %s", self.package.name, self.version_str)
-                os.makedirs(self.get_build_dir(env))
-                self.build_func(self, env)
-
-            logging.info("Installing package: %s, version: %s", self.package.name, self.version_str)
             with env.tmp_swap_file(self.get_install_dir(env)) as tmp_dir:
+                if self.build_func is not None:
+                    logging.info("Building package: %s, version: %s", self.package.name, self.version_str)
+                    os.makedirs(self.get_build_dir(env))
+                    self.build_func(self, env, tmp_dir)
+
+                logging.info("Installing package: %s, version: %s", self.package.name, self.version_str)
                 self.install_func(self, env, tmp_dir)
         else:
             logging.info("Skipping package: %s, version: %s, already installed", self.package.name, self.version_str)
+
+    def __repr__(self) -> str:
+        return "PackageVersion<{},{}>".format(self.package.name, self.version_str)
+
+    def __str__(self) -> str:
+        return self.__repr__()

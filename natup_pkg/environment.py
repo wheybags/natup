@@ -1,13 +1,14 @@
 import os
 import shutil
 import contextlib
+import logging
 import natup_pkg
 from . import packages
 
 
 class Environment:
     def __init__(self, base_path: str):
-        self.base_path = base_path
+        self.base_path = os.path.abspath(base_path)
         self.packages = {}
 
         os.makedirs(self.get_src_dir(), exist_ok=True)
@@ -64,3 +65,31 @@ class Environment:
 
         assert not os.path.exists(real_path)
         os.rename(tmp_path, real_path)
+
+    def install_by_name(self, package_name: str, package_version: str = None) -> bool:
+        if package_name not in self.packages:
+            logging.error("Package not found: %s", package_name)
+            return False
+        if package_version is not None and package_version not in self.packages[package_name]:
+            logging.error("Package %s version %s not found, available versions: %s",
+                          package_name, self.packages[package_name].keys)
+
+        if package_version is None:
+            pkg = self.packages[package_name].get_latest_version()
+        else:
+            pkg = self.packages[package_name]
+
+        todo = [pkg]
+        to_install = []
+
+        while len(todo):
+            current = todo.pop()
+            to_install.append(current)
+            todo += [x for x in current.depends.union(current.build_depends) if x not in to_install]
+
+        to_install.reverse()
+
+        print(to_install)
+
+        for package in to_install:
+            package.install(self)

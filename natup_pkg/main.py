@@ -8,7 +8,10 @@ def __main__():
     import shutil
     shutil.rmtree("test_base")
     env = natup_pkg.Environment('test_base')
-    env.packages["glibc_version_header"].get_latest_version().install(env)
+
+    env.install_by_name("make")
+
+    #env.packages["glibc_version_header"].get_latest_version().install(env)
 
     # packages.glibc_version_header.foo()
     # files.get("https://google.com", "google.html")
