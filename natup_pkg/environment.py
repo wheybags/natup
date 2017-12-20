@@ -44,6 +44,9 @@ class Environment:
         assert pkg.name not in self.packages
         self.packages[pkg.name] = pkg
 
+    def get_concurrent_build_count(self):
+        return 6
+
     @contextlib.contextmanager
     def tmp_swap_file(self, real_path: str):
         """

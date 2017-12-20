@@ -9,7 +9,8 @@ def __main__():
     shutil.rmtree("test_base")
     env = natup_pkg.Environment('test_base')
 
-    env.install_by_name("make")
+    #env.install_by_name("make")
+    env.install_by_name("binutils")
 
     #env.packages["glibc_version_header"].get_latest_version().install(env)
 
