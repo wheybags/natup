@@ -13,6 +13,7 @@ class PackageVersion:
                  archive_hash: str = None,
                  depends: typing.Set["natup_pkg.PackageVersion"] = None,
                  build_depends: typing.Set["natup_pkg.PackageVersion"] = None,
+                 patch_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
                  install_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
                  build_func: typing.Callable[["natup_pkg.PackageVersion", "natup_pkg.Environment", str], None] = None):
 
@@ -24,6 +25,7 @@ class PackageVersion:
         self.build_depends = build_depends if build_depends else set()
         self.install_func = install_func
         self.build_func = build_func
+        self.patch_func = patch_func
 
         assert self.version_str is not None
         assert self.archive_url is not None
@@ -40,6 +42,9 @@ class PackageVersion:
         archive_path = self.get_archive_path(env)
 
         if not os.path.exists(archive_path):
+            logging.info("Downloading package: %s, version: %s, url: %s",
+                         self.package.name, self.version_str, self.archive_url)
+
             with env.tmp_swap_file(archive_path) as tmp_path:
                 natup_pkg.files.get(self.archive_url, tmp_path)
 
@@ -71,6 +76,7 @@ class PackageVersion:
         unpack_dir = self.get_src_dir(env)
 
         if not os.path.exists(unpack_dir):
+            logging.info("Extracting package: %s, version: %s", self.package.name, self.version_str)
             with env.tmp_swap_file(unpack_dir) as tmp_path:
                 shutil.unpack_archive(archive_path, tmp_path)
                 files = os.listdir(tmp_path)
@@ -81,6 +87,10 @@ class PackageVersion:
                     for f in os.listdir(base_path):
                         shutil.move(base_path + "/" + f, tmp_path)
                     os.rmdir(base_path)
+
+                if self.patch_func is not None:
+                    logging.info("Patching package: %s, version: %s", self.package.name, self.version_str)
+                    self.patch_func(self, env, tmp_path)
 
         return unpack_dir
 
@@ -101,10 +111,7 @@ class PackageVersion:
 
     def install(self, env: "natup_pkg.Environment"):
         if not self.installed(env):
-            logging.info("Downloading package: %s, version: %s, url: %s",
-                         self.package.name, self.version_str, self.archive_url)
             self.download_archive(env)
-            logging.info("Extracting package: %s, version: %s", self.package.name, self.version_str)
             self.create_src_dir(env)
 
             if os.path.exists(self.get_build_dir(env)):

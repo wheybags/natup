@@ -1,3 +1,4 @@
+import os
 import natup_pkg
 
 
@@ -8,7 +9,16 @@ def v_4_2_1(pkg: natup_pkg.Package, _env: natup_pkg.Environment):
 
     glibc_version_header_package = _env.packages["glibc_version_header"].versions["0.1"]
 
-    #TODO patch step
+    def patch(_: natup_pkg.PackageVersion, __: natup_pkg.Environment, src_dir: str):
+        with open(src_dir + "/timestamps.txt", "rb") as f:
+            lines = [x.strip() for x in f.readlines()]
+
+        for i in range(len(lines)//2):
+            filename = lines[i*2 + 0]
+            timestamp = int(lines[i*2 + 1])
+
+            path = os.path.abspath(src_dir + "/" + filename.decode())
+            os.utime(path, (timestamp, timestamp))
 
     def build(package: natup_pkg.PackageVersion, env: natup_pkg.Environment, install_dir: str):
         glibc_version = "2.13"
@@ -31,6 +41,7 @@ def v_4_2_1(pkg: natup_pkg.Package, _env: natup_pkg.Environment):
                                                   build_depends={glibc_version_header_package},
                                                   archive_url=archive,
                                                   archive_hash=archive_hash,
+                                                  patch_func=patch,
                                                   build_func=build,
                                                   install_func=install))
 
