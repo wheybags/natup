@@ -42,11 +42,14 @@ class PackageVersion:
         archive_path = self.get_archive_path(env)
 
         if not os.path.exists(archive_path):
-            logging.info("Downloading package: %s, version: %s, url: %s",
-                         self.package.name, self.version_str, self.archive_url)
-
             with env.tmp_swap_file(archive_path) as tmp_path:
+                logging.info("Downloading package: %s, version: %s, url: %s",
+                             self.package.name, self.version_str, self.archive_url)
+
                 natup_pkg.files.get(self.archive_url, tmp_path)
+
+                logging.info("Downloading package: %s, version: %s, url: %s done!",
+                             self.package.name, self.version_str, self.archive_url)
 
                 hasher = hashlib.sha256()
                 with open(tmp_path, "rb") as f:
@@ -69,6 +72,7 @@ class PackageVersion:
                 else:
                     assert file_hash == self.archive_hash
 
+
         return archive_path
 
     def create_src_dir(self, env: "natup_pkg.Environment") -> str:
@@ -76,8 +80,8 @@ class PackageVersion:
         unpack_dir = self.get_src_dir(env)
 
         if not os.path.exists(unpack_dir):
-            logging.info("Extracting package: %s, version: %s", self.package.name, self.version_str)
             with env.tmp_swap_file(unpack_dir) as tmp_path:
+                logging.info("Extracting package: %s, version: %s", self.package.name, self.version_str)
                 shutil.unpack_archive(archive_path, tmp_path)
                 files = os.listdir(tmp_path)
 
@@ -87,10 +91,12 @@ class PackageVersion:
                     for f in os.listdir(base_path):
                         shutil.move(base_path + "/" + f, tmp_path)
                     os.rmdir(base_path)
+                logging.info("Extracting package: %s, version: %s done!", self.package.name, self.version_str)
 
                 if self.patch_func is not None:
                     logging.info("Patching package: %s, version: %s", self.package.name, self.version_str)
                     self.patch_func(self, env, tmp_path)
+                    logging.info("Patching package: %s, version: %s done!", self.package.name, self.version_str)
 
         return unpack_dir
 
@@ -119,12 +125,14 @@ class PackageVersion:
 
             with env.tmp_swap_file(self.get_install_dir(env)) as tmp_dir:
                 if self.build_func is not None:
-                    logging.info("Building package: %s, version: %s", self.package.name, self.version_str)
                     os.makedirs(self.get_build_dir(env))
+                    logging.info("Building package: %s, version: %s", self.package.name, self.version_str)
                     self.build_func(self, env, tmp_dir)
+                    logging.info("Building package: %s, version: %s done!", self.package.name, self.version_str)
 
                 logging.info("Installing package: %s, version: %s", self.package.name, self.version_str)
                 self.install_func(self, env, tmp_dir)
+                logging.info("Installing package: %s, version: %s done!", self.package.name, self.version_str)
         else:
             logging.info("Skipping package: %s, version: %s, already installed", self.package.name, self.version_str)
 
