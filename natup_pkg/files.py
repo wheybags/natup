@@ -9,5 +9,5 @@ def get(url: str, save_path: str):
         r = requests.get(url, stream=True)
         with open(save_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
-                if chunk: # filter out keep-alive new chunks
+                if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)

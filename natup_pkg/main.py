@@ -6,11 +6,15 @@ def __main__():
     setup_logging()
 
     import shutil
-    shutil.rmtree("test_base")
+    #shutil.rmtree("test_base")
     env = natup_pkg.Environment('test_base')
 
+    print(env.packages)
+
+    env.bootstrap()
+
     #env.install_by_name("make")
-    env.install_by_name("binutils")
+    #env.install_by_name("make")
 
     #env.packages["glibc_version_header"].get_latest_version().install(env)
 

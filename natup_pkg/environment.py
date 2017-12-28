@@ -2,6 +2,8 @@ import os
 import shutil
 import contextlib
 import logging
+import copy
+import typing
 import natup_pkg
 from . import packages
 
@@ -9,7 +11,6 @@ from . import packages
 class Environment:
     def __init__(self, base_path: str):
         self.base_path = os.path.abspath(base_path)
-        self.packages = {}
 
         os.makedirs(self.get_src_dir(), exist_ok=True)
         os.makedirs(self.get_archive_dir(), exist_ok=True)
@@ -21,8 +22,13 @@ class Environment:
 
         os.makedirs(self.get_tmp_dir(), exist_ok=False)
 
+        self.base_env_vars = copy.deepcopy(os.environ)
         self.next_tmp_file = 0
 
+        self.packages = {}
+
+        # yes, register twice. The first time creates the packages, the second time resolves dependencies
+        packages.register(self)
         packages.register(self)
 
     def get_src_dir(self) -> str:
@@ -96,3 +102,41 @@ class Environment:
 
         for package in to_install:
             package.install(self)
+
+    def get_path_for_packages(self, packages: typing.Set["natup_pkg.PackageVersion"], existing_path: str = None):
+        path = []
+        if existing_path:
+            path = existing_path.split(":")
+            path.reverse()
+
+        for pkg in packages:
+            path.append(pkg.get_path_var(self))
+
+        path.reverse()
+
+        return ":".join(path)
+
+    def bootstrap(self):
+        bootstrap_env = Environment(self.base_path + "/bootstrap")
+
+        for pkg in bootstrap_env.get_bootstrap_packages():
+            pkg.install(bootstrap_env)
+
+        orig_path = self.base_env_vars["PATH"]
+        self.base_env_vars["PATH"] = self.get_path_for_packages(self.get_bootstrap_packages(), orig_path)
+
+        for pkg in self.get_bootstrap_packages():
+            pkg.install(self)
+
+        self.base_env_vars["PATH"] = orig_path
+
+    def get_bootstrap_packages(self) -> typing.Set["natup_pkg.PackageVersion"]:
+        glibc_header_package = self.packages["glibc_version_header"].versions["0.1"]
+        make_pkg = self.packages["make"].versions["4.2.1"]
+        binutils_pkg = self.packages["binutils"].versions["2.29.1"]
+        gcc_pkg = self.packages["gcc"].versions["7.2.0"]
+
+        return [glibc_header_package, make_pkg, binutils_pkg, gcc_pkg]
+
+    def get_base_env_vars(self):
+        return copy.deepcopy(self.base_env_vars)

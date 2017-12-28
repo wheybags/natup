@@ -35,11 +35,13 @@ def get_autotools_build_and_install_funcs(glibc_version_header_package: "natup_p
         natup_pkg.process.run(package.get_src_dir(env) + "/configure",
                               ["--prefix=" + install_dir] + extra_configure_args,
                               package.get_build_dir(env),
+                              env,
                               env_vars)
 
-        natup_pkg.process.run('make', ['-j', str(env.get_concurrent_build_count())], package.get_build_dir(env), {})
+        natup_pkg.process.run('make', ['-j', str(env.get_concurrent_build_count())],
+                              package.get_build_dir(env), env, {})
 
     def install(package: natup_pkg.PackageVersion, env: natup_pkg.Environment, _: str):
-        natup_pkg.process.run('make', ['install'], package.get_build_dir(env), {})
+        natup_pkg.process.run('make', ['install'], package.get_build_dir(env), env, {})
 
     return build, install

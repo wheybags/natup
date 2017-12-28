@@ -10,17 +10,26 @@ class PackageVersion:
     def __init__(self,
                  version_str: str = None,
                  archive_url: str = None,
-                 archive_hash: str = None,
-                 depends: typing.Set["natup_pkg.PackageVersion"] = None,
-                 build_depends: typing.Set["natup_pkg.PackageVersion"] = None,
-                 patch_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
-                 install_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
-                 build_func: typing.Callable[["natup_pkg.PackageVersion", "natup_pkg.Environment", str], None] = None):
-
+                 archive_hash: str = None):
         self.package = None
         self.version_str = version_str
         self.archive_url = archive_url
         self.archive_hash = archive_hash
+
+        # initialised in finish_init
+        self.depends = None
+        self.build_depends = None
+        self.install_func = None
+        self.build_func = None
+        self.patch_func = None
+
+    def finish_init(self,
+                    depends: typing.Set["natup_pkg.PackageVersion"] = None,
+                    build_depends: typing.Set["natup_pkg.PackageVersion"] = None,
+                    patch_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
+                    install_func: typing.Callable[["PackageVersion", "natup_pkg.Environment", str], None] = None,
+                    build_func: typing.Callable[["natup_pkg.PackageVersion", "natup_pkg.Environment", str], None] = None):
+
         self.depends = depends if depends else set()
         self.build_depends = build_depends if build_depends else set()
         self.install_func = install_func
@@ -72,7 +81,6 @@ class PackageVersion:
                 else:
                     assert file_hash == self.archive_hash
 
-
         return archive_path
 
     def create_src_dir(self, env: "natup_pkg.Environment") -> str:
@@ -114,6 +122,9 @@ class PackageVersion:
 
     def installed(self, env: "natup_pkg.Environment") -> bool:
         return os.path.exists(self.get_install_dir(env))
+
+    def get_path_var(self, env: "natup_pkg.Environment"):
+        return self.get_install_dir(env) + "/bin"
 
     def install(self, env: "natup_pkg.Environment"):
         if not self.installed(env):
