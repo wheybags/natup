@@ -53,6 +53,10 @@ class Environment:
     def get_concurrent_build_count(self):
         return 6
 
+    def get_tmp_filename(self) -> str:
+        self.next_tmp_file += 1
+        return self.get_tmp_dir() + "/" + str(self.next_tmp_file)
+
     @contextlib.contextmanager
     def tmp_swap_file(self, real_path: str):
         """
@@ -67,8 +71,7 @@ class Environment:
         contatining the text "hi", or, if there's some exception within the with body, it just won't exist at all.
         """
 
-        self.next_tmp_file += 1
-        tmp_path = self.get_tmp_dir() + "/" + str(self.next_tmp_file)
+        tmp_path = self.get_tmp_filename()
 
         yield tmp_path
 

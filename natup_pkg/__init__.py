@@ -7,3 +7,4 @@ from . import files
 from . import packages
 from . import package_util
 from . import process
+from . import cache
