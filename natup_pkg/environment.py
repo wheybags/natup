@@ -53,6 +53,10 @@ class Environment:
     def get_concurrent_build_count(self):
         return 6
 
+    def get_tmp_filename(self) -> str:
+        self.next_tmp_file += 1
+        return self.get_tmp_dir() + "/" + str(self.next_tmp_file)
+
     @contextlib.contextmanager
     def tmp_swap_file(self, real_path: str):
         """
@@ -67,8 +71,7 @@ class Environment:
         contatining the text "hi", or, if there's some exception within the with body, it just won't exist at all.
         """
 
-        self.next_tmp_file += 1
-        tmp_path = self.get_tmp_dir() + "/" + str(self.next_tmp_file)
+        tmp_path = self.get_tmp_filename()
 
         yield tmp_path
 
@@ -76,17 +79,31 @@ class Environment:
         os.rename(tmp_path, real_path)
 
     def install_by_name(self, package_name: str, package_version: str = None) -> bool:
+        if not self.bootstrapped():
+            logging.error('natup is not bootstrapped with a base compiler. Run "natup bootstrap" to install a base' +
+                          ' compiler that can then be used to compile other packages')
+            return False
         if package_name not in self.packages:
             logging.error("Package not found: %s", package_name)
             return False
-        if package_version is not None and package_version not in self.packages[package_name]:
+        if package_version is not None and package_version not in self.packages[package_name].versions:
             logging.error("Package %s version %s not found, available versions: %s",
-                          package_name, self.packages[package_name].keys)
+                          package_name, package_version, list(self.packages[package_name].versions.keys()))
+            return False
 
         if package_version is None:
             pkg = self.packages[package_name].get_latest_version()
         else:
-            pkg = self.packages[package_name]
+            pkg = self.packages[package_name].versions[package_version]
+
+        if pkg.installed(self):
+            logging.info('package: %s, version: %s is already installed', pkg.package.name, pkg.version_str)
+            return True
+
+        if pkg in self.get_bootstrap_packages():
+            logging.error('package: %s, version: %s is part of the boostrap packages for this os, run +'
+                          ' "natup bootstrap" to install it', pkg.package.name, pkg.version_str)
+            return False
 
         todo = [pkg]
         to_install = []
@@ -94,16 +111,16 @@ class Environment:
         while len(todo):
             current = todo.pop()
             to_install.append(current)
-            todo += [x for x in current.depends.union(current.build_depends) if x not in to_install]
+            todo += [x for x in current.depends.union(current.build_depends) if x not in to_install and x not in todo]
 
         to_install.reverse()
-
-        print(to_install)
 
         for package in to_install:
             package.install(self)
 
-    def get_path_for_packages(self, packages: typing.Set["natup_pkg.PackageVersion"], existing_path: str = None):
+        return True
+
+    def get_path_for_packages(self, packages: typing.Iterable["natup_pkg.PackageVersion"], existing_path: str = None):
         path = []
         if existing_path:
             path = existing_path.split(":")
@@ -115,6 +132,13 @@ class Environment:
         path.reverse()
 
         return ":".join(path)
+
+    def bootstrapped(self) -> bool:
+        for pkg in self.get_bootstrap_packages():
+            if not pkg.installed(self):
+                return False
+
+        return True
 
     def bootstrap(self):
         bootstrap_env = Environment(self.base_path + "/bootstrap")
@@ -130,7 +154,7 @@ class Environment:
 
         self.base_env_vars["PATH"] = orig_path
 
-    def get_bootstrap_packages(self) -> typing.Set["natup_pkg.PackageVersion"]:
+    def get_bootstrap_packages(self) -> typing.List["natup_pkg.PackageVersion"]:
         glibc_header_package = self.packages["glibc_version_header"].versions["0.1"]
         make_pkg = self.packages["make"].versions["4.2.1"]
         binutils_pkg = self.packages["binutils"].versions["2.29.1"]

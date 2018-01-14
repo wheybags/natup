@@ -4,8 +4,8 @@ import natup_pkg
 class v_2_29_1(natup_pkg.VersionCreator):
     def __init__(self, env: natup_pkg.Environment, name: str):
         version_str = "2.29.1"
-        archive = "file:///home/wheybags/binutils/binutils_2.29.1.tar.gz"
-        archive_hash = "none"
+        archive = "https://github.com/natup-packages/binutils/releases/download/2.29.1-natup-1/binutils-2.29.1-natup-1.tar.gz"
+        archive_hash = "13f9cabf8f7e7dd82759ac390d3ffeaf50eeed6354bd54ccee856da7d3dd08cf"
         super().__init__(env, name, version_str, archive, archive_hash)
 
     def init_impl(self, env: natup_pkg.Environment):

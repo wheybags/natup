@@ -4,8 +4,8 @@ import natup_pkg
 class v_7_2_0(natup_pkg.VersionCreator):
     def __init__(self, env: natup_pkg.Environment, name: str):
         version_str = "7.2.0"
-        archive = "file:///home/wheybags/gcc/7.2/glibcver/gcc_7.2.0.tar.gz"
-        archive_hash = "none"
+        archive = "https://github.com/natup-packages/gcc/releases/download/7.2.0-natup-1/7.2.0-natup-1.tar.gz"
+        archive_hash = "214797c5ea60de3527f4dc9c853a11fbbadc24479a2bcb5cc7f6d6a66bede906"
         super().__init__(env, name, version_str, archive, archive_hash)
 
     def init_impl(self, env: natup_pkg.Environment):

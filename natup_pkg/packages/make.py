@@ -4,8 +4,8 @@ import natup_pkg
 class v_4_2_1(natup_pkg.VersionCreator):
     def __init__(self, env: natup_pkg.Environment, name: str):
         version_str = "4.2.1"
-        archive = "file:///home/wheybags/make/4.2.1-mod.tar.gz"
-        archive_hash = "none"
+        archive = "https://github.com/natup-packages/make/releases/download/4.2.1-natup-1/make-4.2.1-natup-1.tar.gz"
+        archive_hash = "06a269a4805dd31a563450fa879134278a417c90787799c306855bb2796798f8"
         super().__init__(env, name, version_str, archive, archive_hash)
 
     def init_impl(self, env: natup_pkg.Environment):
