@@ -22,14 +22,24 @@ def patch_gnu_project_tarball_timestamps(_: "natup_pkg.PackageVersion", __: "nat
 
 def get_autotools_build_and_install_funcs(glibc_version_header_package: "natup_pkg.PackageVersion",
                                           glibc_version: str,
-                                          extra_configure_args: typing.List[str] = []):
+                                          extra_configure_args: typing.List[str] = None,
+                                          extra_cflags: typing.List[str] = None,
+                                          extra_cxxflags: typing.List[str] = None,
+                                          extra_ldflags: typing.List[str] = None):
+
+    extra_configure_args = extra_configure_args or []
+    extra_cflags = extra_cflags or []
+    extra_cxxflags = extra_cxxflags or []
+
     def build(package: natup_pkg.PackageVersion, env: natup_pkg.Environment, install_dir: str):
         glibc_version_header_dir = glibc_version_header_package.get_install_dir(env)
         glibc_version_header = glibc_version_header_dir + "/force_link_glibc_" + glibc_version + ".h"
 
         env_vars = {
-            "CFLAGS": "-include " + glibc_version_header,
-            "CXXFLAGS": "-include " + glibc_version_header
+            "CFLAGS": " ".join(["-include " + glibc_version_header, '-static-libgcc'] + extra_cflags),
+            "CXXFLAGS": " ".join(["-include " + glibc_version_header, '-static-libgcc -static-libstdc++'] +
+                                 extra_cxxflags),
+            "LDFLAGS": " ".join(extra_ldflags)
         }
 
         natup_pkg.process.run(package.get_src_dir(env) + "/configure",
