@@ -9,7 +9,7 @@ from . import packages
 
 
 class Environment:
-    def __init__(self, base_path: str):
+    def __init__(self, base_path: str, is_bootstrap_env: bool = False):
         self.base_path = os.path.abspath(base_path)
 
         os.makedirs(self.get_src_dir(), exist_ok=True)
@@ -25,6 +25,7 @@ class Environment:
         self.base_env_vars = copy.deepcopy(os.environ)
         self.next_tmp_file = 0
 
+        self.is_bootstrap_env = is_bootstrap_env
         self.packages = {}
 
         # yes, register twice. The first time creates the packages, the second time resolves dependencies
@@ -141,13 +142,14 @@ class Environment:
         return True
 
     def bootstrap(self):
-        bootstrap_env = Environment(self.base_path + "/bootstrap")
+        bootstrap_env = Environment(self.base_path + "/bootstrap", is_bootstrap_env=True)
 
         for pkg in bootstrap_env.get_bootstrap_packages():
             pkg.install(bootstrap_env)
 
         orig_path = self.base_env_vars["PATH"]
-        self.base_env_vars["PATH"] = self.get_path_for_packages(self.get_bootstrap_packages(), orig_path)
+        self.base_env_vars["PATH"] = bootstrap_env.get_path_for_packages(bootstrap_env.get_bootstrap_packages(),
+                                                                         orig_path)
 
         for pkg in self.get_bootstrap_packages():
             pkg.install(self)

@@ -17,9 +17,14 @@ class v_2_29_1(natup_pkg.VersionCreator):
         build_deps = {glibc_version_header_package, make_pkg, binutils_pkg, gcc_pkg}
 
         configure_args = ["--enable-gold", "--enable-ld=default", "--enable-plugins", "--disable-gdb"]
+
+        glibc_ver = "2.13"
+        if env.is_bootstrap_env:
+            glibc_ver = None
+
         build, install = natup_pkg.package_util.get_autotools_build_and_install_funcs(
             glibc_version_header_package,
-            "2.13",
+            glibc_ver,
             extra_configure_args=configure_args)
 
         patch = natup_pkg.package_util.patch_gnu_project_tarball_timestamps

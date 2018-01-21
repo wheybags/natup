@@ -19,8 +19,13 @@ class v_7_2_0(natup_pkg.VersionCreator):
 
         configure_args = ["--enable-libstdcxx-time=rt", "--enable-languages=c,c++", "--disable-multilib",
                           "--disable-libssp", "--disable-libsanitizer"]
+
+        glibc_ver = "2.13"
+        if env.is_bootstrap_env:
+            glibc_ver = None
+
         build, install = natup_pkg.package_util.get_autotools_build_and_install_funcs(
-            glibc_version_header_package, "2.13", extra_configure_args=configure_args)
+            glibc_version_header_package, glibc_ver, extra_configure_args=configure_args)
         patch = natup_pkg.package_util.patch_gnu_project_tarball_timestamps
 
         self.version.finish_init(build_depends=build_deps,
