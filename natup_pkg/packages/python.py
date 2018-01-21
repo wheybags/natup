@@ -16,9 +16,20 @@ class v_3_6_4(natup_pkg.VersionCreator):
 
         build_deps = {glibc_version_header_package, make_pkg, binutils_pkg, gcc_pkg}
 
-        build, install = natup_pkg.package_util.get_autotools_build_and_install_funcs(glibc_version_header_package,
-                                                                                      "2.13",
-                                                                                      extra_ldflags=["-ldl"])
+        get = natup_pkg.package_util.get_autotools_build_and_install_funcs
+
+        extra_ldflags = [
+            # This tells the python interpreter to look for libpython in ../lib instead of system search path.
+            "-Wl,-rpath=$$ORIGIN/../lib",
+
+            # ctypes module uses dlopen + friends
+            "-ldl"]
+
+        build, install = get(glibc_version_header_package,
+                             "2.13",
+                             extra_configure_args=["--enable-shared"],  # pyinstaller doesn't work with static build
+                             extra_ldflags=extra_ldflags)
+
         self.version.finish_init(build_depends=build_deps,
                                  build_func=build,
                                  install_func=install)

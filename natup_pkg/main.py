@@ -37,7 +37,7 @@ def __main__():
             print("-----------------------")
             print("\n".join(sub_parser.format_help().splitlines()[:-3]))
             print()
-        exit(1)
+        sys.exit(1)
 
     env = natup_pkg.Environment('test_base')
 
