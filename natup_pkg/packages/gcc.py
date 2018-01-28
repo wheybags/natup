@@ -17,15 +17,42 @@ class v_7_2_0(natup_pkg.VersionCreator):
         build_deps = {glibc_version_header_package, make_pkg, binutils_pkg, gcc_pkg}
         deps = {binutils_pkg}
 
-        configure_args = ["--enable-libstdcxx-time=rt", "--enable-languages=c,c++", "--disable-multilib",
-                          "--disable-libssp", "--disable-libsanitizer"]
+        configure_args = ["--enable-libstdcxx-time=rt",
+                          "--enable-languages=c,c++",
+                          "--disable-multilib",
+                          "--disable-libssp",
+                          "--disable-libsanitizer"]
+
+        make_extra_env_vars = {}
 
         glibc_ver = "2.13"
         if env.is_bootstrap_env:
             glibc_ver = None
+        else:
+            # gcc being a compiler has a complicated boostrapping process, to just setting CFLAGS like normal won't
+            # quite cut it.
+
+            glibc_version_header_dir = glibc_version_header_package.get_install_dir(env)
+            glibc_version_header = glibc_version_header_dir + "/force_link_glibc_" + glibc_ver + ".h"
+            include_flag = "-include " + glibc_version_header
+
+            # sets flags for "target" libs, like libstdc++ (all the libs in the source tree, as far as I can tell)
+            configure_args.append("CFLAGS_FOR_TARGET=" + include_flag)
+            configure_args.append("CXXFLAGS_FOR_TARGET=" + include_flag)
+
+            # sets flags for final compiler build.
+            # gcc builds three times, once using the existing compiler (stage1), then again using the copy compiled in
+            # stage1 (which produces stage2), then again using the stage2 compiler to build stage3 (final).
+            # This sets the flags for all stages past stage1.
+            # "-g -O2" is the default, so we add it in here too so it's not overwritten
+            make_extra_env_vars["BOOT_CFLAGS"] = "-g -O2 " + include_flag
 
         build, install = natup_pkg.package_util.get_autotools_build_and_install_funcs(
-            glibc_version_header_package, glibc_ver, extra_configure_args=configure_args)
+            glibc_version_header_package,
+            glibc_ver,
+            extra_configure_args=configure_args,
+            make_extra_env_vars=make_extra_env_vars)
+
         patch = natup_pkg.package_util.patch_gnu_project_tarball_timestamps
 
         self.version.finish_init(build_depends=build_deps,

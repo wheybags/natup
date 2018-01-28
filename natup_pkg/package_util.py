@@ -25,7 +25,8 @@ def get_autotools_build_and_install_funcs(glibc_version_header_package: "natup_p
                                           extra_configure_args: typing.List[str] = None,
                                           extra_cflags: typing.List[str] = None,
                                           extra_cxxflags: typing.List[str] = None,
-                                          extra_ldflags: typing.List[str] = None):
+                                          extra_ldflags: typing.List[str] = None,
+                                          make_extra_env_vars: typing.Dict[str, str] = None):
 
     extra_configure_args = extra_configure_args or []
     extra_cflags = extra_cflags or []
@@ -41,21 +42,21 @@ def get_autotools_build_and_install_funcs(glibc_version_header_package: "natup_p
         else:
             include_flag = ""
 
-        env_vars = {
-            "CFLAGS": " ".join([include_flag, '-static-libgcc'] + extra_cflags),
-            "CXXFLAGS": " ".join([include_flag, '-static-libgcc -static-libstdc++'] +
-                                 extra_cxxflags),
-            "LDFLAGS": " ".join(extra_ldflags)
-        }
+        flags = ["CFLAGS=" + " ".join([include_flag, '-static-libgcc'] + extra_cflags),
+                 "CXXFLAGS=" + " ".join([include_flag, '-static-libgcc -static-libstdc++'] + extra_cxxflags)]
+
+        if extra_ldflags:
+            flags.append("LDFLAGS=" + " ".join(extra_ldflags))
 
         natup_pkg.process.run(package.get_src_dir(env) + "/configure",
-                              ["--prefix=" + install_dir] + extra_configure_args,
+                              ["--prefix=" + install_dir] + extra_configure_args + flags,
                               package.get_build_dir(env),
                               env,
-                              env_vars)
+                              {})
 
+        _make_extra_env_vars = make_extra_env_vars or {}
         natup_pkg.process.run('make', ['-j', str(env.get_concurrent_build_count())],
-                              package.get_build_dir(env), env, {})
+                              package.get_build_dir(env), env, _make_extra_env_vars)
 
     def install(package: natup_pkg.PackageVersion, env: natup_pkg.Environment, _: str):
         natup_pkg.process.run('make', ['install'], package.get_build_dir(env), env, {})
