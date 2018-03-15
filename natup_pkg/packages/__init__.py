@@ -12,3 +12,5 @@ def register(env: "natup_pkg.Environment"):
     gcc.register(env)
     from . import python
     python.register(env)
+    from . import cmake
+    cmake.register(env)

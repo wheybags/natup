@@ -3,6 +3,7 @@ import os
 import typing
 import logging
 import hashlib
+import copy
 import natup_pkg
 
 
@@ -125,6 +126,18 @@ class PackageVersion:
 
     def get_path_var(self, env: "natup_pkg.Environment"):
         return self.get_install_dir(env) + "/bin"
+
+    def run_command(self, command: str,
+                    arguments: typing.List[str],
+                    working_directory: str,
+                    env: "natup_pkg.Environment",
+                    extra_env_vars: typing.Dict[str, str]):
+
+        env_vars = env.get_base_env_vars()
+        env_vars["PATH"] = env.get_path_for_packages(self.build_depends, env_vars["PATH"])
+        env_vars.update(extra_env_vars)
+
+        natup_pkg.process.run(command, arguments, working_directory, env, env_vars)
 
     def install(self, env: "natup_pkg.Environment"):
         if not self.installed(env):
