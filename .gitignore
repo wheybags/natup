@@ -2,4 +2,7 @@ __pycache__
 /.idea/
 /env/
 /test_base/
-/venv/
+/venv*/
+/build/
+/dist/
+/*.spec
