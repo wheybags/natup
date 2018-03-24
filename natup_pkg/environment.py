@@ -23,9 +23,6 @@ class Environment:
         os.makedirs(self.get_tmp_dir(), exist_ok=False)
 
         self.base_env_vars = copy.deepcopy(os.environ)
-        self.base_env_vars["HUNTER_ROOT"] = self.get_build_dir() + "/hunter_packages_root"
-        os.makedirs(self.base_env_vars["HUNTER_ROOT"], exist_ok=True)
-
         self.next_tmp_file = 0
 
         self.is_bootstrap_env = is_bootstrap_env
